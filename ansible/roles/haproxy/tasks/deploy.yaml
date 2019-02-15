@@ -1,0 +1,82 @@
+---
+- name: Status of Haproxy
+  shell: if [ -f /usr/sbin/haproxy ];then echo 0;else echo 1;fi
+  register: status
+  ignore_errors: yes
+
+- name: Status of Keepalived
+  shell: if [ -f /usr/sbin/keepalived ];then echo 0;else echo 1;fi
+  register: keepalived_status
+  when: keepalived == "yes"
+  ignore_errors: yes
+
+- name: debug
+  debug: var=status.stdout
+
+- name: debug2
+  debug: var=hostvars[inventory_hostname]['ansible_eth0']
+
+- include: "roles/haproxy/tasks/env_destroy.yaml"
+  when: status.stdout == "1" and keepalived == "no"
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+- include: "roles/haproxy/tasks/env.yaml"
+  when: status.stdout == "1" and keepalived == "no"
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+
+- include: "roles/haproxy/tasks/env_destroy.yaml"
+  when: status.stdout == "1" and keepalived == "yes" and keepalived_status.stdout == "1"
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+- include: "roles/haproxy/tasks/env.yaml"
+  when: status.stdout == "1" and keepalived == "yes" and keepalived_status.stdout == "1"
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+
+- name: Copy haproxy.cfg
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+
+- name: Copy keepalived.conf
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  when: keepalived == "yes"
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+
+- name: Copy check_alive.sh
+  copy: src=check_alive.sh dest=/root/xcloud/check_alive.sh mode=777
+  when: keepalived == "yes"
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+  
+- name: Start Haproxy when keepalived is enabled
+  service:
+    name: haproxy
+    state: started
+    enabled: yes
+  when: keepalived == "yes"
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+
+- name: Start Haproxy
+  shell: haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid
+  run_once: True
+  delegate_to: "{{ groups['haproxy'][0] }}"
+  when: keepalived == "no"
+
+- name: Start keepalived
+  service:
+    name: keepalived
+    state: started
+    enabled: yes
+  when: keepalived == "yes"
+  delegate_to: "{{item}}"
+  with_items: "{{groups['haproxy']}}"
+
+

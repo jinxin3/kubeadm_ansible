@@ -1,0 +1,15 @@
+---
+- include: "roles/flannel/tasks/pull.yaml"
+  when: local_install == "yes"
+
+- name: Copy flannel.yaml
+  template:
+    src: kube-flannel.yml.j2
+    dest: /root/xcloud/kube-flannel-1.12.2.yml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Apply flannel
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl apply -f  /root/xcloud/kube-flannel-1.12.2.yml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"

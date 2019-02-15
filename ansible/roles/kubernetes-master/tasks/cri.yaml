@@ -1,0 +1,26 @@
+---
+- name: Copy cri.sh for Install online
+  copy: src=cri.sh dest=/root/xcloud mode=777
+  when: local_install == "no"
+
+- name: CRI-O Online Install
+  shell: ./cri.sh chdir=/root/xcloud
+  when: local_install == "no"
+
+- name: Copying over 99-kubernetes-cri.conf files for cri
+  copy: src=99-kubernetes-cri.conf dest=/etc/sysctl.d/99-kubernetes-cri.conf
+
+- name: Apply the sysctl
+  command: sysctl --system
+
+- name: Delete /etc/cni/net.d
+  file:
+    path: /etc/cni/net.d
+    state: absent
+
+- name: Start CRI-O
+  service:
+    name: crio
+    state: started
+    enabled: yes
+

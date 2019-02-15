@@ -1,0 +1,14 @@
+---
+- name: Copy base_destroy env shell for systems
+  copy: src=base_destroy.sh dest=/root/xcloud/ mode=777
+  
+- name: Module of network and filesystem
+  shell: ./base_destroy.sh chdir=/root/xcloud
+  ignore_errors: yes
+
+- name: Remove base_destroy.sh
+  command: rm -f base_destroy.sh chdir=/root/xcloud
+
+
+
+

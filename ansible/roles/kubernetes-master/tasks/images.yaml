@@ -1,0 +1,60 @@
+---
+- name: Docker registry
+  copy: src=registry.tar.gz dest=/root/xcloud
+  when: local_install == "yes"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+
+- name: Load registry 
+  command: docker load -i /root/xcloud/registry.tar.gz
+  when: local_install == "yes"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+
+- name: k8s images directory exists ?
+  file:
+    path: "/data/registry/"
+    state: "directory"
+    recurse: yes
+  when: local_install == "yes"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+
+- name: Copy k8s images
+  copy: src=registry dest=/data/
+  when: local_install == "yes"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+
+- name: Start docker registry
+  command: docker run -d -p 4000:5000 --restart=always --privileged --name registrylocal -v /data/registry:/var/lib/registry registry:2
+  when: local_install == "yes"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+
+- name: Mkdir /data/registry
+  file:
+    path: "/data/registry/"
+    state: "directory"
+    recurse: yes
+  when: local_install == "no"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+
+- name: Start docker registry online
+  command: docker run -d -p 4000:5000 --restart=always --privileged --name registrylocal -v /data/registry:/var/lib/registry registry:2
+  when: local_install == "no"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+
+- name: Copy images.sh 
+  copy: src=images.sh dest=/root/xcloud mode=777
+  when: local_install == "no"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+
+- name: Pull k8s images
+  command: ./images.sh {{ kubernetes_registry_ip }} chdir=/root/xcloud 
+  when: local_install == "no"
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"

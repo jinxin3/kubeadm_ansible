@@ -1,0 +1,30 @@
+---
+
+- hosts: all
+  roles:
+    - role: haproxy
+      when: enable_haproxy == "yes"
+
+- hosts: kubernetes-master
+  roles:
+    - role: kubernetes-master
+
+- hosts: kubernetes-node
+  roles:
+    - { role: kubernetes-node}
+
+- hosts: flannel
+  roles:
+    - role: flannel
+      when: flannel_network == "yes"
+
+- hosts: calico
+  roles:
+    - role: calico
+      when: calico_network == "yes"
+
+- hosts: dashboard
+  roles:
+    - role: dashboard
+      when: enable_dashboard == "yes"
+

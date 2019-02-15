@@ -1,0 +1,33 @@
+---
+- name: Copy docker_online.sh for Install online
+  copy: src=docker_online.sh dest=/root/xcloud mode=777
+  when: local_install == "no"
+
+- name: Online Install
+  shell: ./docker_online.sh chdir=/root/xcloud
+  when: local_install == "no"
+
+- name: Ensuring config directories exist
+  file:
+    path: "/etc/docker/"
+    state: "directory"
+    recurse: yes
+
+- name: Copying over daemon.json files for services
+  template:
+    src: "daemon.json.j2"
+    dest: "/etc/docker/daemon.json"
+
+- name: Build service directories
+  command: mkdir  -p /etc/systemd/system/docker.service.d
+
+- name: Service daemon reload
+  command: systemctl daemon-reload
+
+- name: Start docker
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+

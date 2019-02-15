@@ -1,0 +1,14 @@
+---
+- name: Remove haproxy 
+  shell: yum remove -y haproxy
+  ignore_errors: yes
+
+- name: Remove Keepalived
+  shell: yum remove -y keepalived
+  ignore_errors: yes
+    
+- name: Remove packages
+  command: rm -rf packages chdir=/root/
+  when: local_install == "yes"
+  ignore_errors: yes
+

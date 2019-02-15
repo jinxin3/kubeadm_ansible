@@ -1,0 +1,21 @@
+---
+- include: "roles/destroy/tasks/flannel_destroy.yaml"
+  when:  flannel_network == "yes"
+
+- include: "roles/destroy/tasks/calico_destroy.yaml"
+  when: calico_network == "yes"
+
+- include: "roles/destroy/tasks/dashboard_destroy.yaml"
+  when: enable_dashboard == "yes"
+
+- include: "roles/destroy/tasks/node_destroy.yaml"
+
+- include: "roles/destroy/tasks/master_destroy.yaml"
+
+- include: "roles/destroy/tasks/k8s_destroy.yaml"
+  when: env == "no"
+- include: "roles/destroy/tasks/env_destroy.yaml"
+  when: env == "no"
+
+- include: "roles/destroy/tasks/haproxy_destroy.yaml"
+  when: enable_haproxy == "yes"

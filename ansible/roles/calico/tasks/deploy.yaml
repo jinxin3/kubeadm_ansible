@@ -1,0 +1,25 @@
+---
+- include: "roles/calico/tasks/pull.yaml"
+  when: local_install == "yes"
+
+- name: Copy rbac-kdd.yaml
+  copy: src=rbac-kdd.yaml dest=/root/xcloud/rbac-kdd.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Copy calico.yaml
+  template:
+    src: calico.yaml.j2
+    dest: /root/xcloud/calico.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Apply rbac-kdd.yaml
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl apply -f  /root/xcloud/rbac-kdd.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+  
+- name: Apply calico.yaml
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl apply -f  /root/xcloud/calico.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"

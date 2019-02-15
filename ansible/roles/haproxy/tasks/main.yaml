@@ -1,0 +1,3 @@
+---
+- include: "roles/haproxy/tasks/{{ action }}.yaml"
+

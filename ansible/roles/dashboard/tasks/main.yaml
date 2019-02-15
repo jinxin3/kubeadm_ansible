@@ -1,0 +1,3 @@
+---
+- include: "roles/dashboard/tasks/{{ action }}.yaml"
+  

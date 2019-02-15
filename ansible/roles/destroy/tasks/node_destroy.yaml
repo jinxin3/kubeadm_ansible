@@ -1,0 +1,6 @@
+---
+- name: Delete node
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; for n in `kubectl get nodes|awk '{print $1}'`;do kubectl delete node $n;done;
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+  ignore_errors: yes

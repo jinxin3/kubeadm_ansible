@@ -1,0 +1,4 @@
+---
+- include: "roles/haproxy/tasks/env_destroy.yaml"
+- include: "roles/haproxy/tasks/env.yaml"
+

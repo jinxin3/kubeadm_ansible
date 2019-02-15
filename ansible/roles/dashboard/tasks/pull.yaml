@@ -1,0 +1,10 @@
+---
+- name: Copy dashboard.txt
+  copy: src=dashboard.txt dest=/root/xcloud/
+
+- name: Copy pull images shell for systems
+  copy: src=dashboard.sh dest=/root/xcloud/ mode=777
+
+- name: Pull dashboard images
+  shell: ./dashboard.sh {{kubernetes_registry}} chdir=/root/xcloud/
+  

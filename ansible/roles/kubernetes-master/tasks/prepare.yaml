@@ -1,0 +1,7 @@
+---
+- include: "roles/kubernetes-master/tasks/env_destroy.yaml"
+- include: "roles/kubernetes-master/tasks/env.yaml"
+- include: "roles/kubernetes-master/tasks/images.yaml"
+- include: "roles/kubernetes-master/tasks/pull_destroy.yaml"
+- include: "roles/kubernetes-master/tasks/pull.yaml"
+

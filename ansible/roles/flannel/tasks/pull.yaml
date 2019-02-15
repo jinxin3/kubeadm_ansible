@@ -1,0 +1,10 @@
+---
+- name: Copy flannel.txt
+  copy: src=flannel.txt dest=/root/xcloud/
+
+- name: Copy pull images shell for systems
+  copy: src=flannel.sh dest=/root/xcloud/ mode=777
+
+- name: Pull flannel images
+  shell: ./flannel.sh {{kubernetes_registry}} chdir=/root/xcloud/
+  

@@ -1,0 +1,4 @@
+---
+- name: Remove all images
+  shell: for i in `docker images|grep -v registry|awk '{print $3}'|grep -v IMAGE`;do docker rmi -f $i;done
+  ignore_errors: yes

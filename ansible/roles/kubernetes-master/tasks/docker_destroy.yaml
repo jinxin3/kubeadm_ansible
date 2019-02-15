@@ -1,0 +1,26 @@
+---
+- name: Remove all container
+  shell: for c in `docker ps -a|awk '{print $1}'|grep -v CONTAINER`;do docker rm -f $c;done;echo $?
+  ignore_errors: yes
+- name: Stop docker
+  service:
+     name: docker
+     state: stopped
+  ignore_errors: yes
+
+- name: Remove docker-ce
+  command: yum remove -y docker-ce
+  ignore_errors: yes
+
+- name: Remove daemon.json
+  command: rm -f daemon.json chdir=/etc/docker/
+  ignore_errors: yes
+
+- name: Remove docker.service.d
+  command: rmdir docker.service.d chdir=/etc/systemd/system/
+  ignore_errors: yes
+
+- name: Remove docker directory
+  command: rm -rf  docker chdir=/etc/
+  ignore_errors: yes
+

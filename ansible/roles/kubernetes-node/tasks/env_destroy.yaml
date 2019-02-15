@@ -1,0 +1,12 @@
+---
+- include: "roles/kubernetes-master/tasks/docker_destroy.yaml"
+- include: "roles/kubernetes-master/tasks/cri_destroy.yaml"
+- include: "roles/kubernetes-master/tasks/k8s_destroy.yaml"
+- include: "roles/kubernetes-master/tasks/base_destroy.yaml"
+
+
+- name: Remove packages
+  command: rm -rf packages chdir=/root/
+  when: local_install == "yes"
+  ignore_errors: yes
+

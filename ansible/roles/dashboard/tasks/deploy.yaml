@@ -1,0 +1,64 @@
+---
+- include: "roles/dashboard/tasks/pull.yaml"
+  when: local_install == "yes"
+
+- name: Copy dashboard.yaml
+  copy:
+    src: kubernetes-dashboard.yaml
+    dest: /root/xcloud/kubernetes-dashboard.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Apply dashboard
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl apply -f  /root/xcloud/kubernetes-dashboard.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Openssl Key
+  shell: openssl pkcs12 -export  -in /etc/kubernetes/pki/apiserver-kubelet-client.crt  -out apiserver-kubelet-client.p12 -inkey /etc/kubernetes/pki/apiserver-kubelet-client.key -password pass:xiangcloud
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: fetched file 
+  fetch:
+    src: /root/apiserver-kubelet-client.p12
+    dest: /root/apiserver-kubelet-client.p12
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Copy dashboard-adminuser.yaml
+  copy:
+    src: dashboard-adminuser.yaml
+    dest: /root/xcloud/dashboard-adminuser.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Copy role-binding.yaml
+  copy:
+    src: role-binding.yaml
+    dest: /root/xcloud/role-binding.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Apply Service accout
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl apply -f  /root/xcloud/dashboard-adminuser.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Apply ClusterRoleBinding
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl apply -f  /root/xcloud/role-binding.yaml
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Get Token 
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep admin-user | awk '{print $1}')|grep token|grep -v Name|grep -v Type|awk '{print $2}'>/root/xcloud/dashboard_token.txt
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+
+- name: Fetched Token file
+  fetch:
+    src: /root/xcloud/dashboard_token.txt
+    dest: /root/
+  run_once: True
+  delegate_to: "{{groups['kubernetes-master'][0]}}"
+

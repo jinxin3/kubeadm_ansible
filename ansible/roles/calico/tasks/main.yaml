@@ -1,0 +1,4 @@
+---
+- include: "roles/calico/tasks/{{ action }}.yaml"
+
+

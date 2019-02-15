@@ -1,0 +1,7 @@
+---
+- name: Delete Master
+  shell: echo y|kubeadm reset
+  run_once: True
+  ignore_errors: yes
+  delegate_to: "{{item}}"
+  with_items: "{{ groups['kubernetes-master'] }}"

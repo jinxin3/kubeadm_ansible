@@ -1,0 +1,55 @@
+---
+- name: Stop Haproxy kill
+  shell: for i in `ps -ef|grep haproxy|grep -v grep|awk '{print $2}'`;do kill -9 $i;done
+  ignore_errors: yes
+
+- name: Stop Haproxy
+  service:
+    name: haproxy
+    state: stopped
+  run_once: True
+  delegate_to: "{{ groups['haproxy'][0] }}"
+  when: keepalived == "no"
+  ignore_errors: yes
+
+- name: Stop Haproxy when keepalived is enabled
+  service:
+    name: haproxy
+    state: stopped
+  when: keepalived == "yes"
+  ignore_errors: yes
+
+- name: Stop keepalived
+  service:
+    name: keepalived
+    state: stopped
+  when: keepalived == "yes"
+  ignore_errors: yes
+
+- name: Remove haproxy
+  shell: yum remove -y haproxy
+  ignore_errors: yes
+
+- name: Remove Keepalived
+  shell: yum remove -y keepalived
+  ignore_errors: yes
+
+- name: Remove packages
+  command: rm -rf packages chdir=/root/
+  when: local_install == "yes"
+  ignore_errors: yes
+
+- name: Remove haproxy.cfg
+  shell: rm -rf haproxy chdir=/etc/
+  ignore_errors: yes
+
+- name: Remove keepalived.conf
+  shell: rm -rf keepalived chdir=/etc/
+  when: keepalived == "yes"
+  ignore_errors: yes
+
+- name: Remove check_alive.sh
+  shell: rm -f check_alive.sh chdir=/root/xcloud/
+  when: keepalived == "yes"
+  ignore_errors: yes
+

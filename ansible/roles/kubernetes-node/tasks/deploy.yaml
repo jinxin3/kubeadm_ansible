@@ -1,0 +1,57 @@
+---
+- name: State of Nodes
+  shell: if [ -f /etc/kubernetes/bootstrap-kubelet.conf ];then echo 0;else echo 1;fi
+  register: status
+  ignore_errors: yes
+
+
+- include: "roles/kubernetes-master/tasks/env_destroy.yaml"
+  when: status.stdout == "1"
+- include: "roles/kubernetes-master/tasks/env.yaml"
+  when: status.stdout == "1"
+
+- include: "roles/kubernetes-master/tasks/pull_destroy.yaml"
+  when: status.stdout == "1"
+- include: "roles/kubernetes-master/tasks/pull.yaml"
+  when: status.stdout == "1"
+
+- name: Token Get
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf ;kubeadm token list|grep init|awk '{print $1}'
+  register: token_result
+  when: enable_haproxy == "no"
+  run_once: True
+  delegate_to: "{{ groups['kubernetes-master'][0] }}"
+
+- name: Token Get Haproxy
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf ;kubeadm token list|grep bootstrappers|awk '{print $1}'
+  register: ha_token_result
+  when: enable_haproxy == "yes"
+  run_once: True
+  delegate_to: "{{ groups['kubernetes-master'][0] }}"
+
+- name: Set Token
+  set_fact: token="{{token_result.stdout}}"
+  when: enable_haproxy == "no"
+
+- name: Haproxy Set Token
+  set_fact: token="{{ha_token_result.stdout}}"
+  when: enable_haproxy == "yes"
+
+- name: Ca-Cert-Hash
+  shell: openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+  register: discovery_token_hash
+  run_once: True
+  delegate_to: "{{ groups['kubernetes-master'][0] }}"
+
+- name: Set Hash
+  set_fact: discovery_token_ca_cert_hash="{{discovery_token_hash.stdout}}"
+
+
+- name: Node deploy
+  shell:  kubeadm join "{{groups['kubernetes-master'][0]}}":6443 --token "{{token}}" --discovery-token-ca-cert-hash sha256:"{{discovery_token_ca_cert_hash}}"
+  when: status.stdout == "1" and enable_haproxy == "no"
+
+
+- name: Haproxy node  deploy
+  shell:  kubeadm join "{{haproxy_hostname}}":6443 --token "{{token}}" --discovery-token-ca-cert-hash sha256:"{{discovery_token_ca_cert_hash}}"
+  when: status.stdout == "1" and enable_haproxy == "yes"

@@ -1,0 +1,25 @@
+---
+local_install: "yes"
+env: "no"
+kubernetes_version: "v1.13.1"
+kubernetes_registry: "192.168.201.32:4000"
+kubernetes_registry_ip: "192.168.201.32"
+pod_network_cidr: "10.244.0.0/16"
+
+network_interface: "eth0"
+
+enable_haproxy: "yes"
+haproxy_vip: "192.168.201.33"
+haproxy_hostname: "k8s-1"
+keepalived: "no"
+keepalived_virtual_router_id: "51"
+keepalived_password: "xiangcloud123"
+haproxy_config_dir: "/root/xcloud"
+
+network: "10.244.0.0/16"
+flannel_network: "yes"
+calico_network: "no"
+
+enable_dashboard: "yes"
+dashborad_config_dir: "/root/xcloud"
+

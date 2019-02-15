@@ -1,0 +1,13 @@
+---
+- name: Remove registrylocal
+  command: docker rm -f registrylocal
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+  ignore_errors: yes
+
+- name: Remove directory of registry
+  command: rm -rf registry chdir=/data/
+  run_once: True
+  delegate_to: "{{ kubernetes_registry_ip }}"
+  ignore_errors: yes
+  

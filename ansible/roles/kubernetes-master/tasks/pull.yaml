@@ -1,0 +1,13 @@
+---
+- name: Copy pull images shell for systems
+  copy: src=pull.sh dest=/root/xcloud/ mode=777
+
+- name: Ps all images
+  command: docker images
+  register: all_images
+
+- name: Pull kubernetes images
+  shell: ./pull.sh {{kubernetes_version}} {{kubernetes_registry}} chdir=/root/xcloud/
+  when: all_images.stdout.find('k8s') == -1
+
+

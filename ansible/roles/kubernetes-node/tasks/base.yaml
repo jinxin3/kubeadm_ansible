@@ -1,0 +1,10 @@
+---
+- name: Copy base env shell for systems
+  copy: src=base.sh dest=/root/xcloud/ mode=777
+
+- name: Module of network and filesystem
+  shell: ./base.sh {{local_install}} chdir=/root/xcloud
+
+
+
+

@@ -1,0 +1,45 @@
+global
+  chroot /var/lib/haproxy
+  user haproxy
+  group haproxy
+  daemon
+  log 127.0.0.1 local1 notice
+  maxconn 4000
+  stats socket /var/lib/haproxy/haproxy.sock
+
+defaults
+  log global
+  mode http
+  option redispatch
+  option httplog
+  option forwardfor
+  retries 3
+  timeout http-request 10s
+  timeout queue 1m
+  timeout connect 10s
+  timeout client 1m
+  timeout server 1m
+  timeout check 10s
+
+listen stats
+   mode http
+   bind {{ hostvars[inventory_hostname]['ansible_' + hostvars[inventory_hostname]['network_interface']]['ipv4']['address'] }}:1984
+   stats enable
+   stats uri /
+   stats refresh 15s
+   stats realm Haproxy\ Stats
+   stats auth kubernetes:xiangcloud123
+
+
+listen k8s
+  mode tcp
+  timeout client 3600s
+  timeout server 3600s
+  option tcplog
+  option tcpka
+  bind {{haproxy_vip}}:6443
+  {% for host in groups['kubernetes-master'] %}
+  server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_' + hostvars[host]['network_interface']]['ipv4']['address'] }}:6443 check fall 5 inter 2000 rise 2
+  {% endfor %}
+
+

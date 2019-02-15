@@ -1,0 +1,10 @@
+---
+- name: Copy calico.txt
+  copy: src=calico.txt dest=/root/xcloud/
+
+- name: Copy pull images shell for systems
+  copy: src=calico.sh dest=/root/xcloud/ mode=777
+
+- name: Pull calico images
+  shell: ./calico.sh {{kubernetes_registry}} chdir=/root/xcloud/
+  

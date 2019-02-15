@@ -1,0 +1,137 @@
+---
+- name: State of Masters
+  shell: if [ -d /var/lib/kubelet/pods ];then echo 0;else echo 1;fi
+  register: status
+  ignore_errors: yes
+
+
+- include: "roles/kubernetes-master/tasks/env_destroy.yaml"
+  when: status.stdout == "1"
+- include: "roles/kubernetes-master/tasks/env.yaml"
+  when: status.stdout == "1"
+- include: "roles/kubernetes-master/tasks/images.yaml"
+  when: status.stdout == "1"
+- include: "roles/kubernetes-master/tasks/pull_destroy.yaml"
+  when: status.stdout == "1"
+- include: "roles/kubernetes-master/tasks/pull.yaml"
+  when: status.stdout == "1"
+
+
+- name: Haproxy First Master
+  set_fact: first_master="{{ groups['kubernetes-master'][0] }}"
+
+- name: Single Master init
+  shell: touch /root/xcloud/xcloud.log;kubeadm init --pod-network-cidr={{pod_network_cidr}} --kubernetes-version={{kubernetes_version}} >/root/xcloud/xcloud.log
+  when: enable_haproxy == "no" and status.stdout == "1"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: Haproxy Master kubeadm-config.yaml
+  template:
+    src: "kubeadm-config.yaml.j2"
+    dest: "/root/xcloud/kubeadm-config.yaml"
+  when: enable_haproxy == "yes" and kubernetes_version == "v1.13.1" and status.stdout == "1"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: Haproxy Master init
+  shell: touch /root/xcloud/xcloud.log;kubeadm init --config=/root/xcloud/kubeadm-config.yaml >/root/xcloud/xcloud.log
+  when: enable_haproxy == "yes" and kubernetes_version == "v1.13.1" and status.stdout == "1"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+
+- name: Single Master init successfully ?
+  shell: cat /root/xcloud/xcloud.log|grep successfully;if [ $? == 0 ];then    echo 0; else    echo 1; fi
+  register: result
+  when: enable_haproxy == "no"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: Single Master init config
+  shell:  rm -rf $HOME/.kube; mkdir -p $HOME/.kube ;cp -if /etc/kubernetes/admin.conf $HOME/.kube/config;chown $(id -u):$(id -g) $HOME/.kube/config
+  when: enable_haproxy == "no" and result.stdout.find('successfully') != -1
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: Haproxy Master init successfully ?
+  shell: cat /root/xcloud/xcloud.log|grep successfully;if [ $? == 0 ];then    echo 0; else    echo 1; fi
+  register: result
+  when: enable_haproxy == "yes" and kubernetes_version == "v1.13.1"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: Haproxy Master init config
+  shell:  rm -rf $HOME/.kube;mkdir -p $HOME/.kube ;cp -if /etc/kubernetes/admin.conf $HOME/.kube/config;chown $(id -u):$(id -g) $HOME/.kube/config
+  when: enable_haproxy == "yes" and result.stdout.find('successfully') != -1
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: Token Get
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf ;kubeadm token list|grep init|awk '{print $1}'
+  register: token_result
+  when: enable_haproxy == "no"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: debug2
+  debug: var=token_result.stdout
+
+- name: Token Get Haproxy
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf ;kubeadm token list|grep bootstrappers|awk '{print $1}'
+  register: ha_token_result
+  when: enable_haproxy == "yes"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: debug2s
+  debug: var=token_result
+  when: enable_haproxy == "no"
+
+- name: Set Token
+  set_fact: token="{{token_result.stdout}}"
+  when: enable_haproxy == "no"
+
+- name: Haproxy Set Token
+  set_fact: token="{{ha_token_result.stdout}}"
+  when: enable_haproxy == "yes"
+
+- name: Ca-Cert-Hash
+  shell: openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+  register: discovery_token_hash
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: Set Hash
+  set_fact: discovery_token_ca_cert_hash="{{discovery_token_hash.stdout}}"
+
+- name: debug
+  debug: var=discovery_token_ca_cert_hash
+
+- name: Copy ha_config.sh
+  copy: src=ha_config.sh dest=/root/xcloud/ha_config.sh mode=777
+  when: item != inventory_hostname
+  with_items: "{{ groups['kubernetes-master'] }}"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+  
+- name: Haproxy Master other Master config
+  shell: ./ha_config.sh {{item}} chdir=/root/xcloud/
+  when: item != inventory_hostname
+  with_items: "{{ groups['kubernetes-master'] }}"
+  run_once: True
+  delegate_to: "{{ first_master }}"
+
+- name: debug
+  debug: var=first_master
+- name: dbug 
+  debug: var=token
+
+- name: Haproxy Master other Master deploy
+  shell: kubeadm join {{haproxy_hostname}}:6443 --token {{token}} --discovery-token-ca-cert-hash sha256:{{discovery_token_ca_cert_hash}} --experimental-control-plane >/root/join.log
+  run_once: True
+  delegate_to: "{{ item }}"
+  when: item != first_master and enable_haproxy == "yes" and status.stdout == "1"
+  with_items: "{{groups['kubernetes-master']}}"
+
+

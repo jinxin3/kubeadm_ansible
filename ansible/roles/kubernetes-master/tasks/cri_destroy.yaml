@@ -1,0 +1,19 @@
+---
+- name: Stop CRI-O
+  service:
+    name: crio
+    state: stopped
+  ignore_errors: yes
+
+- name: Remove CRI-O
+  command: yum remove -y cri-o
+  ignore_errors: yes
+
+- name: Remove 99-kubernetes-cri.conf
+  command: rm -f 99-kubernetes-cri.conf chdir=/etc/sysctl.d/
+  ignore_errors: yes
+
+- name: Apply the sysctl
+  command: sysctl --system
+  ignore_errors: yes
+

@@ -1,0 +1,14 @@
+---
+- name: Copy kubernetes-dashboard.yaml
+  copy:
+    src: kubernetes-dashboard.yaml
+    dest: /root/xcloud/kubernetes-dashboard.yaml
+  run_once: True
+  delegate_to: "{{groups['dashboard'][0]}}"
+  ignore_errors: yes
+
+- name: Delete dashboard
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl delete -f  /root/xcloud/kubernetes-dashboard.yaml
+  run_once: True
+  delegate_to: "{{groups['dashboard'][0]}}"
+  ignore_errors: yes

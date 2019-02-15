@@ -1,0 +1,3 @@
+---
+- include: "roles/kubernetes-master/tasks/{{ action }}.yaml"
+

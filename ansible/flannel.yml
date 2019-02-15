@@ -1,0 +1,13 @@
+---
+- hosts: flannel
+  roles:
+    - { role: flannel}
+
+#- hosts: calico
+#  roles:
+#    - { role: calico}
+
+#- hosts: dashboard
+#  roles:
+#    - { role: dashboard}
+

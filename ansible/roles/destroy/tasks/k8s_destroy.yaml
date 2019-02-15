@@ -1,0 +1,27 @@
+---
+- name: Stop kubelet
+  service:
+    name: kubelet
+    state: stopped
+  ignore_errors: yes
+
+- name: Remove kubeadm kubelet kubectl
+  command: yum remove -y kubelet kubeadm kubectl
+  ignore_errors: yes
+
+- name:  Remove kubernetes yum.repo
+  command: rm -f kubernetes chdir=/etc/yum.repos.d
+  when: local_install == "no"
+
+- name: Remove k8s.conf
+  command: rm -f k8s.conf chdir=/etc/sysctl.d/
+  ignore_errors: yes
+
+- name: Apply the sysctl
+  command: sysctl --system
+  ignore_errors: yes
+
+- name: Remove kubernetes directory
+  command: rm -rf kubernetes chdir=/etc/
+  ignore_errors: yes
+  
